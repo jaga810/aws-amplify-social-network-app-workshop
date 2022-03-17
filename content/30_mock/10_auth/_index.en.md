@@ -41,9 +41,11 @@ amplify push
 
 Current Environment: production
 
-| Category | Resource name  | Operation | Provider plugin   |
-| -------- | -------------- | --------- | ----------------- |
-| Auth     | boyaki6ab6e661 | Create    | awscloudformation |
+┌──────────┬────────────────┬───────────┬───────────────────┐
+│ Category │ Resource name  │ Operation │ Provider plugin   │
+├──────────┼────────────────┼───────────┼───────────────────┤
+│ Auth     │ boyaki6e01665f │ Create    │ awscloudformation │
+└──────────┴────────────────┴───────────┴───────────────────┘
 ? Are you sure you want to continue? Yes
 ```
 3. Wait a few minutes for the changes to the cloud to apply.
