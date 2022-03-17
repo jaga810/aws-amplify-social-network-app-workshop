@@ -26,14 +26,31 @@ amplify add api
 
 A few questions are asked to you, so please enter as follows:
 
-- Please select from one of the below mentized services: `GraphQL`
-- Provided API name: `BoyakiGql`
-- Choose the default authorization type for the API: `Amazon Cognito User Pool`
-- Do you want to configure advanced settings for the GraphQL API: `No, I am done. `
-- Do you have an annotated GraphQL schema? `No`
-- Choose a schema template: `Single object with fields (e.g., “Todo” with ID, name, description)`
-- Do you want to edit the schema now? `No`
+```none
+? Select from one of the below mentioned services: GraphQL
+```
 
+In the next questions, you can select items using arrow keys and modify it.
+
+1. Set `Authorization modes` as `Amazon Cognito User Pool`
+2. Type `No` for `? Configure additional auth types?`
+
+Please confirm prompt is the same as following, and then please select `Continue`.
+
+```none
+? Here is the GraphQL API that we will create. Select a setting to edit or continue 
+  Name: boyaki 
+  Authorization modes: Amazon Cognito User Pool (default) 
+  Conflict detection (required for DataStore): Disabled 
+❯ Continue 
+```
+
+Answer the rest questions as below. Then you'll find GraphQL schema file opend in your editor.
+
+```none
+? Choose a schema template: Single object with fields (e.g., “Todo” with ID, name, description)
+✔ Do you want to edit the schema now? (Y/n) · Y
+```
 
 {{% notice tip%}}
 When choosing GraphQL, it provisions AWS AppSync, which is a managed service for GraphQL. AWS AppSync provides four authentication options: IAM authentication, API KEY authentication, Amazon Cognito User Pool authentication, and OIDC authentication.
@@ -52,30 +69,29 @@ Copy the following contents and replace `./amplify/backend/api/BoyakiGql/schema.
 type Post
   @model (
     mutations: {create: "createPost", delete: "deletePost", update: null}
-    timestamps: null
-    subscriptions: { level: public }
   )
   @auth(rules: [
     {allow: owner, ownerField:"owner", provider: userPools, operations:[read, create, delete]}
     {allow: private, provider: userPools, operations:[read]}
   ])
 {
+  id: ID! @primaryKey # automatically filled by AppSync
   type: String! # always set to 'post'. used in the SortByTimestamp GSI
-  id: ID
   content: String!
   owner: String
   timestamp: Int!
 }
 ```
 
-- With `@model` (model directive), Amazon DynamoDB Table according to the definition of Post type and Query/Mutation for CRUD/Subscription are created automatically. [[learn more](https://docs.amplify.aws/cli/graphql-transformer/model#model)]
-  -  GraphQL API doesn't have API for updating Post by specifing `mutations: ...` because user doesn't need to update Post in this app. [detail](https://docs.amplify.aws/cli/graphql-transformer/model#usage) 
-  - Post type doesn't have `createdAt` and `updatedAt` attributes which are created by default by specifing `timestamps:...`. Use AWS Timestamp `timestamp` attribute instead here.
-- `@auth` (auth directive) can be used to implement Query/Mutation authorization strategy for Post type. [[learn more](https://docs.amplify.aws/cli/graphql-transformer/auth)]
+- With `@model` (model directive), Amazon DynamoDB Table according to the definition of Post type and Query/Mutation for CRUD/Subscription are created automatically. [[learn more](https://docs.amplify.aws/cli/graphql/data-modeling/)]
+  -  GraphQL API doesn't have API for updating Post by specifing `mutations: ...` because user doesn't need to update Post in this app. [detail](https://docs.amplify.aws/cli/graphql/data-modeling/#rename-generated-queries-mutations-and-subscriptions) 
+- `@auth` (auth directive) can be used to implement Query/Mutation authorization strategy for Post type. [[learn more](https://docs.amplify.aws/cli/graphql/authorization-rules/)]
   - `{allow: owner,... ` allows `read`, `create` and `delete` for the author of Post (owner).
   - `{allow: private,... ` allows `read` for all users authenticated with Cognito User Pools.
-- `content` is a field of type `String`. `!` means it's a required field.
+- Specify `id` field as primaryKey using `@primaryKey`
+  - This `id` field is automatically filled by Amplify in UUID format when creating Post.
 - The `type` field is used later. It always contains `"post"`.
+- `content` is a field of type `String`. `!` means it's a required field.
 
 {{% notice tip%}}
 GraphQL provides scalar types such as `ID`, `String`, and `Int`. In addition to these, AWS AppSync provides unique scalar types such as `AWSTimestamp`, `AWSURL`, and `AWSPhone`. [[learn more](https://docs.aws.amazon.com/ja_jp/appsync/latest/devguide/scalars.html)]

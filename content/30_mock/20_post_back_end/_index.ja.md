@@ -18,13 +18,31 @@ amplify add api
 
 いくつか質問されるので、以下のように入力してください。
 
-- Please select from one of the below mentioned services: `GraphQL`
-- Provide API name: `BoyakiGql`
-- Choose the default authorization type for the API: `Amazon Cognito User Pool`
-- Do you want to configure advanced settings for the GraphQL API: `No, I am done.`
-- Do you have an annotated GraphQL schema? `No`
-- Choose a schema template: `Single object with fields (e.g., “Todo” with ID, name, description)`
-- Do you want to edit the schema now? `No`
+```none
+? Select from one of the below mentioned services: GraphQL
+```
+
+次の質問では、矢印キーで変更する項目を選択し、書き換えることができます。
+
+1. `Authorization modes` を `Amazon Cognito User Pool`に変更
+2. `? Configure additional auth types?`には`No`と回答
+
+とし、以下のようになっていることを確認して`Continue`を押して下さい。
+
+```none
+? Here is the GraphQL API that we will create. Select a setting to edit or continue 
+  Name: boyaki 
+  Authorization modes: Amazon Cognito User Pool (default) 
+  Conflict detection (required for DataStore): Disabled 
+❯ Continue 
+```
+
+次の２つの質問には以下のように回答します。するとロジックを記述するスキーマファイルが開きます。
+
+```none
+? Choose a schema template: Single object with fields (e.g., “Todo” with ID, name, description)
+✔ Do you want to edit the schema now? (Y/n) · Y
+```
 
 {{% notice tip %}}
 GraphQLを選択すると、GraphQLのマネージドサービスであるAWS AppSyncがプロビジョニングされます。AWS AppSyncはIAM認証、API KEY認証、Amazon Cognito User Pool認証、OIDC認証の四つの認証が用意されており、この中の一つ、あるいは複数を同時に使用することが可能です。
@@ -41,30 +59,29 @@ schema.graphqlを編集して、Post(投稿)を管理するAPIを作成しまし
 type Post
   @model (
     mutations: {create: "createPost", delete: "deletePost", update: null}
-    timestamps: null
-    subscriptions: { level: public }
   )
   @auth(rules: [
     {allow: owner, ownerField:"owner", provider: userPools, operations:[read, create, delete]}
     {allow: private, provider: userPools, operations:[read]}
   ])
 {
+  id: ID! @primaryKey # automatically filled by AppSync
   type: String! # always set to 'post'. used in the SortByTimestamp GSI
-  id: ID
   content: String!
   owner: String
   timestamp: Int!
 }
 ```
 
-- `@model`(model directive)をつけると、Post型の定義に沿ったAmazon DynamoDB Tableや、CRUDのためのQuery/Mutation/Subscriptionを自動作成します。[[詳細](https://docs.amplify.aws/cli/graphql-transformer/model#model)]
-  - Postをupdateする必要はないので、`mutations: ...`の引数でupdate用のAPIを作成しない設定にしています。[詳細](https://docs.amplify.aws/cli/graphql-transformer/model#usage)
-  `timestamps:...`では、デフォルトで自動的に付与される`updatedAt``createdAt`の属性を作らない設定をします。代わりにAWS Timestamp属性の`timestamp`を用います。
-- `@auth`(auth directive)をつけると、Post型に対するQuery/Mutationの認可戦略を実装できます。[[詳細](https://docs.amplify.aws/cli/graphql-transformer/auth)]
+- `@model`(model directive)をつけると、Post型の定義に沿ったAmazon DynamoDB Tableや、CRUDのためのQuery/Mutation/Subscriptionを自動作成します。[[詳細](https://docs.amplify.aws/cli/graphql/data-modeling/)]
+  - Postをupdateする必要はないので、`mutations: ...`の引数でupdate用のAPIを作成しない設定にしています。[詳細](https://docs.amplify.aws/cli/graphql/data-modeling/#rename-generated-queries-mutations-and-subscriptions)
+- `@auth`(auth directive)をつけると、Post型に対するQuery/Mutationの認可戦略を実装できます。[[詳細](https://docs.amplify.aws/cli/graphql/authorization-rules/)]
   - `{allow: owner, ...`では、Postの作成者(owner)に対して、`read`と`create`と`delete`を許可しています。
   - `{allow: private,...`では、Cognito User Poolsで認証された全てのユーザーに対して`read`を許可しています。
-- `content`は`String`型のフィールドで、`!`がついているため必須フィールドです。
+- `id`フィールドはデータベースのPrimaryKeyとして利用するため、`@primaryKey`を付与しています。
+  - ID型の`id`フィールドはPostをCreateする際、Amplifyによって自動的にUUIDが付与されます。
 - `type`フィールドは後ほど使用します。常に`"post"`が入ります。
+- `content`は`String`型のフィールドで、`!`がついているため必須フィールドです。
 
 {{% notice tip %}}
 GraphQLには、`ID`、`String`、`Int`といったスカラー型が用意されていますが、AWS AppSyncにはこれらに加えて`AWSTimestamp`、`AWSURL`、`AWSPhone`といった独自のスカラー型が用意されています。[[参考](https://docs.aws.amazon.com/ja_jp/appsync/latest/devguide/scalars.html)]
