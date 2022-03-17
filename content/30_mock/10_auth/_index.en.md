@@ -27,10 +27,12 @@ amplify add auth
 $ amplify status
 
 Current Environment: production
-
-| Category | Resource name  | Operation | Provider plugin   |
-| -------- | -------------- | --------- | ----------------- |
-| Auth     | boyaki6ab6e661 | Create    | awscloudformation |
+    
+┌──────────┬────────────────┬───────────┬───────────────────┐
+│ Category │ Resource name  │ Operation │ Provider plugin   │
+├──────────┼────────────────┼───────────┼───────────────────┤
+│ Auth     │ boyaki6e01665f │ Create    │ awscloudformation │
+└──────────┴────────────────┴───────────┴───────────────────┘
 ```
 2. Execute `amplify push` to apply the changes to the cloud. The message, `Are you sure you want to continue? ` is appeared, so press Enter.
 ```

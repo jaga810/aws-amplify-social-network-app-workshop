@@ -24,10 +24,12 @@ amplify add auth
 $ amplify status
 
 Current Environment: production
-
-| Category | Resource name  | Operation | Provider plugin   |
-| -------- | -------------- | --------- | ----------------- |
-| Auth     | boyaki6ab6e661 | Create    | awscloudformation |
+    
+┌──────────┬────────────────┬───────────┬───────────────────┐
+│ Category │ Resource name  │ Operation │ Provider plugin   │
+├──────────┼────────────────┼───────────┼───────────────────┤
+│ Auth     │ boyaki6e01665f │ Create    │ awscloudformation │
+└──────────┴────────────────┴───────────┴───────────────────┘
 ```
 1. `amplify push`を実行し、クラウドへ変更を反映します。`Are you sure you want to continue?`と聞かれるのでEnterを押します。
 ```
