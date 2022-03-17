@@ -120,58 +120,36 @@ npm install --save aws-amplify@3.3.14 @aws-amplify/ui-react@0.2.34
 ```js
 import React from 'react';
 import Amplify from 'aws-amplify';
-import { AmplifyAuthenticator, AmplifySignUp, AmplifySignOut } from '@aws-amplify/ui-react';
-import { AuthState, onAuthUIStateChange } from '@aws-amplify/ui-components';
 import awsconfig from './aws-exports';
+
+import { Authenticator } from '@aws-amplify/ui-react';
+import '@aws-amplify/ui-react/styles.css';
 
 Amplify.configure(awsconfig);
 
 const App = () => {
-    const [authState, setAuthState] = React.useState();
-    const [user, setUser] = React.useState();
-
-    React.useEffect(() => {
-        return onAuthUIStateChange((nextAuthState, authData) => {
-            setAuthState(nextAuthState);
-            setUser(authData)
-        });
-    }, []);
-
-  return authState === AuthState.SignedIn && user ? (
-      <div className="App">
-          <div>Hello, {user.username}</div>
-          <AmplifySignOut />
-      </div>
-    ) : (
-      <AmplifyAuthenticator>
-        <AmplifySignUp
-          slot="sign-up"
-          formFields={[
-            { type: "username" },
-            { type: "password" },
-            { type: "email" }
-          ]}
-        />
-      </AmplifyAuthenticator>
+  return(
+    <Authenticator>
+      {({ signOut, user }) => (
+        <main>
+          <h1>Hello {user.username}</h1>
+          <button onClick={signOut}>Sign out</button>
+        </main>
+      )}
+    </Authenticator>
   );
 }
 
 export default App;
 ```
 
-{{% notice tip%}}
-`Authenticator` prompts you for a phone number by default. You can skip the phone number input by specifying `formFields`.
-{{% /notice%}}
-
 ### Login Test
 Let's create an account and log in.
 
 1. Access `http://localhost:3000` in web browser.
 1. Click `Create account`.
-1. Enter `Username`, `Password`, `Email`, and click `CREATE ACCOUNT`.
-1. Password must be at least 8 characters long.
-1. Enter the `Confirmation Code` sent to the email address you entered and click `CONFIRM`.
-1. Enter `Username` and `Password` to log in.
+1. Enter `Username`, `Password`, `Email`, and click `CREATE ACCOUNT`. (Password must be at least 8 characters long.)
+1. Enter the `Confirmation Code` sent to the email address you entered and click `Confirm`.
 1. `Hello, ${username}! ` is displayed, the login is complete.
 
 

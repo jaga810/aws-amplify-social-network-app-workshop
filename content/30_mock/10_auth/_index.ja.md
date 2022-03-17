@@ -115,39 +115,23 @@ npm install --save aws-amplify@3.3.14 @aws-amplify/ui-react@0.2.34
 ```js
 import React from 'react';
 import Amplify from 'aws-amplify';
-import { AmplifyAuthenticator, AmplifySignUp, AmplifySignOut } from '@aws-amplify/ui-react';
-import { AuthState, onAuthUIStateChange } from '@aws-amplify/ui-components';
 import awsconfig from './aws-exports';
+
+import { Authenticator } from '@aws-amplify/ui-react';
+import '@aws-amplify/ui-react/styles.css';
 
 Amplify.configure(awsconfig);
 
 const App = () => {
-    const [authState, setAuthState] = React.useState();
-    const [user, setUser] = React.useState();
-
-    React.useEffect(() => {
-        return onAuthUIStateChange((nextAuthState, authData) => {
-            setAuthState(nextAuthState);
-            setUser(authData)
-        });
-    }, []);
-
-  return authState === AuthState.SignedIn && user ? (
-      <div className="App">
-          <div>Hello, {user.username}</div>
-          <AmplifySignOut />
-      </div>
-    ) : (
-      <AmplifyAuthenticator>
-        <AmplifySignUp
-          slot="sign-up"
-          formFields={[
-            { type: "username" },
-            { type: "password" },
-            { type: "email" }
-          ]}
-        />
-      </AmplifyAuthenticator>
+  return(
+    <Authenticator>
+      {({ signOut, user }) => (
+        <main>
+          <h1>Hello {user.username}</h1>
+          <button onClick={signOut}>Sign out</button>
+        </main>
+      )}
+    </Authenticator>
   );
 }
 
@@ -155,7 +139,7 @@ export default App;
 ```
 
 {{% notice tip %}}
-デフォルトでは電話番号の入力フォームが表示されますが、今回は必要ないため、`formFields`を指定することで非表示にしています。
+Authenticator は Internationalization(i18n)をサポートしています。日本語化したい方は次のリンクをご参照下さい。[https://ui.docs.amplify.aws/components/authenticator#internationalization-i18n](https://ui.docs.amplify.aws/components/authenticator#internationalization-i18n)
 {{% /notice %}}
 
 ### 動作確認
@@ -163,10 +147,8 @@ export default App;
 
 1. ブラウザで`http://localhost:3000`にアクセスします
 1. `Create acccount`をクリックします
-1. `Username`、`Password`、`Email`を入力し、`CREATE ACCOUNT`をクリックします
-  1. Passwordは8文字以上である必要があります
-1. 入力したメールアドレスに送付された`Confirmation Code`を入力し、`CONFIRM`をクリックします
-1. `Username`、`Password`を入力しログインしましょう
+1. `Username`、`Password`、`Email`を入力し、`CREATE ACCOUNT`をクリックします(Passwordは8文字以上である必要があります)
+1. 入力したメールアドレスに送付された`Confirmation Code`を入力し、`Confirm`をクリックします
 1. `Hello, ${ユーザー名}`と表示されればログイン完了です
 
 ![](/images/30_mock/auth.png)
