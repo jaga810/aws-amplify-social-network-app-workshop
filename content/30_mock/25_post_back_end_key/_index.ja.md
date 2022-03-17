@@ -13,8 +13,9 @@ DynamoDBのクエリは、最大で二つのAttribute(AppSyncのフィールド)
 この二つのAttributeはPartition Key(PK)とSort Key(SK)と呼ばれます。
 DynamoDBはPK単体をプライマリキー(Tableにおけるユニークな識別子)、あるいはPKとSKを組み合わせてプライマリキーとして利用することができます。
 
-@keyの主な役割は、このPKとSKを指定することにあります。
-PKとSKを使わずにクエリを書く場合、DynamoDBのTableの中身全てをスキャンすることになり、非常に効率が悪いです。
+`@primaryKey`はDynamoDB TableのPKとSKを指定します。
+`@index`はインデックス(Global Secondary Index)のPKとSKを指定します。
+PKとSKを使わずにクエリを書く場合、DynamoDBのTableの中身全てをスキャンすることになり、非常に効率が悪くなってしまいます。
 効率が悪いと、クエリに時間がかかるだけでなく、従量課金制であるためにコストもかさんでしまいます。
 
 今回はどのようにPK、SKを設計すれば良いのでしょうか？
@@ -22,16 +23,11 @@ PKとSKを使わずにクエリを書く場合、DynamoDBのTableの中身全て
 ### 必要なクエリを考えてみよう
 Postには自動でIDを振りたいですし、Post単体を`getPost`Queryで`id`を指定して引っ張って来るためにも、作成したDynamoDB TableのPartition Key(PK)は`id`フィールドのままで良いでしょう。
 
-{{% notice tip %}}
-`createPost`の引数で`id`フィールドが空の場合、AmplifyでセットアップしたAppSyncは自動的にIDを生成して`id`フィールドに埋めます。
-今回は、このIDの自動生成機能を利用するため、`id`を必須フィールドにしていません。(`id`を必須にしてしまうと`createPost`Mutation実行時に`id`をクライアント側で渡す必要があるため)
-{{% /notice %}}
-
 ただ、Postの一覧を取得する際には時系列に並んでいて欲しい一方、先程確認した通り、`listPost`ではランダムな順序でフェッチすることしかできません。
-このような場合は`@key`を使用することでDynamoDBのインデックスを作成し、特定のフィールドを引数にしたQueryを作成します。
+このような場合は`@index`を使用することでDynamoDBのインデックスを作成し、特定のフィールドを引数にしたQueryを作成します。
 
 {{% notice info%}}
-`@key`の使用時にDynamoDBでセットアップされるインデックスはGlobal Secondary Indexと呼ばれます。
+`@index`の使用時にDynamoDBでセットアップされるインデックスはGlobal Secondary Indexと呼ばれます。
 Global Secondary Indexの詳細な説明は省かせていただきますが、ざっくりいうとPKとSKを変えたTableをもう一つ作成し、スキャンを回避して高速に特定のクエリを実行するための機能です[[参考](https://docs.aws.amazon.com/ja_jp/amazondynamodb/latest/developerguide/GSI.html)]。
 {{% /notice %}}
 
@@ -40,9 +36,9 @@ Global Secondary Indexの詳細な説明は省かせていただきますが、�
 1. 全てのつぶやきを時系列順にリスト
 1. 特定のユーザーによるつぶやきをリスト
 
-### 必要なクエリを@keyに落とし込む
+### 必要なクエリを@indexに落とし込む
 
-これを実現する`@key`を書いてみます。
+これを実現する`@index`を書いてみます。
 `./amplify/backend/api/BoyakiGql/schema.graphql`を編集して、
 `type Post`を以下の内容に置き換えましょう。
 
@@ -50,31 +46,30 @@ Global Secondary Indexの詳細な説明は省かせていただきますが、�
 type Post
   @model (
     mutations: {create: "createPost", delete: "deletePost", update: null}
-    timestamps: null
-    subscriptions: { level: public}
   )
   @auth(rules: [
     {allow: owner, ownerField:"owner", provider: userPools, operations:[read, create, delete]}
     {allow: private, provider: userPools, operations:[read]}
   ])
-  @key(name: "SortByTimestamp", fields:["type", "timestamp"], queryField: "listPostsSortedByTimestamp")
-  @key(name: "BySpecificOwner", fields:["owner", "timestamp"], queryField: "listPostsBySpecificOwner")
 {
+  id: ID! @primaryKey # automatically filled by AppSync
   type: String! # always set to 'post'. used in the SortByTimestamp GSI
-  id: ID
+    @index(name: "SortByTimestamp", sortKeyFields: ["timestamp"], queryField: "listPostsSortedByTimestamp")
   content: String!
   owner: String
+    @index(name: "BySpecificOwner", sortKeyFields: ["timestamp"], queryField: "listPostsBySpecificOwner")
   timestamp: Int!
 }
 ```
 
-`@key`で使用する項目は以下の三つです。
+`@index`を付与したフィールドがインデックス(GSI)のPKとなります。
+`@index`で使用する項目は以下の三つです。
 
-- name: DynamoDBのインデックス(Global Secondary Index)の名前
-- fields: ひとつめがPartition Keyに利用するフィールド、二つ目がSort Keyに利用するフィールドです。ひとつだけ書くと、Partition Keyのみがセットアップされます。
+- name: DynamoDBのインデックス(GSI)の名前
+- sortKeyFields: GSIのSKに利用するフィールドです。
 - queryField: `getPost`のような、GraphQLのqueryの名前です。
 
-今回足した`@key`はどのようなクエリを可能にするのでしょうか？
+今回足した`@index`はどのようなクエリを可能にするのでしょうか？
 
 - `listPostsSortedByTimestamp`
   - 常に`"post"`が格納される`type`フィールドをPKにすることで、全てのPostをフェッチすることができます
@@ -92,14 +87,14 @@ Amplify Mocking(手元での動作確認)には20002番ポートが利用可能�
 {{% /notice %}}
 
 #### @keyの変更の反映
-`@key`を複数同時に追加した際は、`$ amplify mock api`を一度止め、再度実行する必要があります。
+`@index`を複数同時に追加した際は、`$ amplify mock api`を一度止め、再度実行する必要があります。
 
 ```bash
 Ctrl + C
 amplify mock api
 ```
 
-また、Amplify GraphQL Explorerのウェブページを更新しておいてください。
+また、Amplify GraphQL Explorerのウェブページを更新しておきます。
 
 #### Postの作成
 異なる二つのユーザーから、`timestamp`が異なるPostを複数作成します。
@@ -126,7 +121,7 @@ amplify mock api
 なぜAmplify Mockingを使うとよいのでしょうか？
 本ワークショップでは手順上、出戻りやスキーマの大幅な修正がありません。
 一方、実際の開発では初期の段階でスキーマを大幅に変更してトライアンドエラーを繰り返すことが多いと思います。
-ここで困るのが`@key`で設定するDynamoDBのPK/SKは作成時しか設定ができないことです。
+ここで困るのが`@primaryKey`で設定するDynamoDB本体テーブルのPK/SKは作成時しか設定ができないことです。
 (DynamoDBの作り直しができない状況でPK/SKの変更をおこなう場合、`@key`でGSIを追加することで対処します。)
-そのため、ある程度Amplify Mockingで開発を行い、仕様が固まってからクラウドに反映するのがベストプラクティスとなります。
+そのため、ある程度Amplify Mockingで開発を行い、仕様が固まってからクラウドに反映することを推奨しています。
 {{% /notice %}}

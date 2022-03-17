@@ -14,8 +14,9 @@ It is best to use at most two Attributes (AppSync fields) for DynamoDB queries.
 These two attributes are called Partition Key (PK) and Sort Key (SK).
 DynamoDB can use a single PK as a primary key (unique identifier in Table) or a combination of PK and SK as a primary key.
 
-Main role of @key (key directive) specifies PK and SK.
-If you write a query without PK and SK, it scans all the contents in your DynamoDB table, which is very inefficient.
+`@primaryKey` specifies PK and SK of DyanamoDB Table.
+`@index` specifies PK and SK of index(Global Secondary Index).
+If you write a query without using PK and SK, it scans all the contents in your DynamoDB table, which is very inefficient.
 Not only takes time to query, but also costs more because of pay-as-you-go.
 
 How do you design PK and SK this time?
@@ -24,28 +25,22 @@ How do you design PK and SK this time?
 You want to automatically assign an ID to Post, and also want to pull the Post by specifying `id` in `getPost` Query.
 You created the DynamoDB Table's Partition Key (PK) should remain the `id` field.
 
-{{% notice tip%}}
-If the `id` field is empty in the `createPost` argument, AppSync set up with Amplify automatically generates an ID and fills the `id` field.
-In boyaki, `id` is not a required field in order to use the auto-generation function of this ID. (If `id` is required, `id` needs to be passed on the client side when `createPost` Mutation is executed)
-{{% /notice%}}
-
 However, while you want the list of Post to be in chronological order, you can only fetch it in a random order in `listPost` as we confirmed earlier.
-In such case, you can create a DynamoDB index by using `@key` and create a query with a specific field as an argument.
+In such case, you can create a DynamoDB index by using `@index` and create a query with a specific field as an argument.
 
 {{% notice info%}}
-Indexes set up in DynamoDB when using `@key` are called Global Secondary Index (GSI).
+Indexes set up in DynamoDB when using `@index` are called Global Secondary Index (GSI).
 The detailed description of GSI is omitted.
 Roughly speaking, GSI is a functionality of DynamoDB to create another table with different PK and SK, to avoid scanning, and to quickly execute specific queries. 
 [[learn more](https://docs.aws.amazon.com/ja_jp/amazondynamodb/latest/developerguide/GSI.html)].
 {{% /notice%}}
-
 
 Now let's consider what format the client application wants to fetch data.
 
 1. List all tweets in chronological order
 1. List tweets by a specific user
 
-### Set up @key
+### Set up @index
 Let's write `@key` to achieve this.
 Update `./amplify/backend/api/BoyakiGql/schema.graphql` as follows.
 
@@ -53,31 +48,30 @@ Update `./amplify/backend/api/BoyakiGql/schema.graphql` as follows.
 type Post
   @model (
     mutations: {create: "createPost", delete: "deletePost", update: null}
-    timestamps: null
-    subscriptions: { level: public}
   )
   @auth(rules: [
     {allow: owner, ownerField:"owner", provider: userPools, operations:[read, create, delete]}
     {allow: private, provider: userPools, operations:[read]}
   ])
-  @key(name: "SortByTimestamp", fields:["type", "timestamp"], queryField: "listPostsSortedByTimestamp")
-  @key(name: "BySpecificOwner", fields:["owner", "timestamp"], queryField: "listPostsBySpecificOwner")
 {
+  id: ID! @primaryKey # automatically filled by AppSync
   type: String! # always set to 'post'. used in the SortByTimestamp GSI
-  id: ID
+    @index(name: "SortByTimestamp", sortKeyFields: ["timestamp"], queryField: "listPostsSortedByTimestamp")
   content: String!
   owner: String
+    @index(name: "BySpecificOwner", sortKeyFields: ["timestamp"], queryField: "listPostsBySpecificOwner")
   timestamp: Int!
 }
 ```
 
-The following three fields are used in `@key`.
+Fields which has `@index`are PK of index (GSI).
+The following three fields are used in `@index`.
 
 - name: a name of the DynamoDB index (Global Secondary Index)
-- fields: the first field is used for Partition Key, and the second field is used for Sort Key. If you write only one, only Partition Key is set up.
+- sortKeyFields: field is used for SK.
 - queryField: a name of the GraphQL query, such as `getPost`.
 
-What kind of query does the addition of `@key` allow?
+What kind of query does the addition of `@index` allow?
 
 - `listPostsSortedByTimestamp`
   - All Posts can be fetched by setting to PK to the `type` field that `"post"` is always contained.
@@ -88,7 +82,7 @@ What kind of query does the addition of `@key` allow?
 
 
 ### Checking Behavior with Amplify Mock
-Let's take a look at Amplify GraphQL Explorer again to see how @key works.
+Let's take a look at Amplify GraphQL Explorer again to see how @index works.
 
 {{% notice info%}}
 Amplify Mocking requires port 20002 to be available and may not be available in all Cloud IDEs.
@@ -97,7 +91,7 @@ If you are using the applicable Cloud IDE, please do not follow this procedure a
 
 
 #### Applying @key
-When multiple `@key`s are added, you need to restgart `$ amplify mock api`.
+When multiple `@index`s are added, you need to restgart `$ amplify mock api`.
 
 ```bash
 Ctrl + C 
@@ -131,7 +125,7 @@ You create multiple Posts with different `timestamp` from two different users.
 Why Amplify Mocking?
 In this workshop, there are not any significant changes to schema.
 In actual development, significant changes are often made to the schema in the early stages and repeat tri-and-error.
-The problem here is that DynamoDB PK/SK set by `@key` can only be set at the time of creation.
-(If you want to change PK/SK in a situation where DynamoDB cannot be recreated, add GSI with `@key`.)
-Therefore, it is best practice to develop with Amplify Mocking to a certain extent, and then apply it in the cloud after the specification is confirmed.
+The problem here is that DynamoDB PK/SK set by `@primaryKey` can only be set at the time of creation.
+(If you want to change PK/SK in a situation where DynamoDB cannot be recreated, add GSI with `@index`.)
+Therefore, we recommend you to develop with Amplify Mocking to a certain extent, and then apply it in the cloud after the specification is fixed.
 {{% /notice%}}
