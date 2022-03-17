@@ -54,8 +54,8 @@ Current Environment: production
 {{% /notice %}}
 
 ### 認証機能のフロントエンドへの実装
-AmplifyはReactで利用可能な便利なUIコンポーネントをまとめたライブラリ、[@aws-amplify/ui-react](https://docs.amplify.aws/ui/q/framework/react)を提供しています。
-今回は[Authenticator](https://docs.amplify.aws/ui/auth/authenticator/q/framework/react)を利用して、認証機能を追加します。
+AmplifyはReactで利用可能な便利なUIコンポーネントをまとめたライブラリ、[@aws-amplify/ui-react](https://ui.docs.amplify.aws/)を提供しています。
+今回は[Authenticator](https://ui.docs.amplify.aws/components/authenticator)を利用して、認証機能を追加します。
 
 1. `aws-amplify`と`Amplify Framework`をアプリケーションに追加します。
 ```

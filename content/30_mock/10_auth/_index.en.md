@@ -58,8 +58,8 @@ The `amplify push` command is a command that applies changes made by the `amplif
 
 
 ### Implementing Authentication Functionality on Front End
-Amplify provides [@aws-amplify/ui-react](https://docs.amplify.aws/ui/q/framework/react) that is a library of useful components available in React.
-In this workshop, you use the [Authenticator](https://docs.amplify.aws/ui/auth/authenticator/q/framework/react) component to allow only authenticated users to interact with the application.
+Amplify provides [@aws-amplify/ui-react](https://ui.docs.amplify.aws/) that is a library of useful components available in React.
+In this workshop, you use the [Authenticator](https://ui.docs.amplify.aws/components/authenticator) component to allow only authenticated users to interact with the application.
 
 
 1. Add `aws-amplify` and `Amplify Framework` to your application.
