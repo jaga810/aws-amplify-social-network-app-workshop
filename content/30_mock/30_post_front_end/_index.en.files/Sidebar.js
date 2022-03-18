@@ -18,7 +18,7 @@ import {
 import {Auth, API, graphqlOperation } from 'aws-amplify';
 
 import { createPost } from '../graphql/mutations';
-import { useHistory } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 
 const drawerWidth = 340;
 const MAX_POST_CONTENT_LENGTH = 140;
@@ -44,7 +44,7 @@ const useStyles = makeStyles(theme => ({
 
 export default function Sidebar({activeListItem}) {
   const classes = useStyles();
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const [value, setValue] = React.useState('');
   const [isError, setIsError] = React.useState(false);
@@ -94,7 +94,7 @@ export default function Sidebar({activeListItem}) {
           selected={activeListItem === 'global-timeline'}
           onClick={() => {
             Auth.currentAuthenticatedUser().then((user) => {
-              history.push('/global-timeline');
+              navigate('/global-timeline');
             })
           }}
           key='global-timeline'
@@ -109,7 +109,7 @@ export default function Sidebar({activeListItem}) {
           selected={activeListItem === 'profile'}
           onClick={() => {
             Auth.currentAuthenticatedUser().then((user) => {
-              history.push('/' + user.username);
+              navigate('/' + user.username);
             })
           }}
           key='profile'

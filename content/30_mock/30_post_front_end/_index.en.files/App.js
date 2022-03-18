@@ -1,18 +1,18 @@
 import React from 'react';
 import Amplify from 'aws-amplify';
-import { AmplifyAuthenticator, AmplifySignUp } from '@aws-amplify/ui-react';
-import { AuthState, onAuthUIStateChange } from '@aws-amplify/ui-components';
 import awsconfig from './aws-exports';
 
-import {
-  HashRouter,
-  Switch,
-  Route,
-  Redirect,
-} from 'react-router-dom';
+import { Authenticator } from '@aws-amplify/ui-react';
+import '@aws-amplify/ui-react/styles.css';
 
 import { makeStyles, createMuiTheme, ThemeProvider } from '@material-ui/core/styles';
 import CssBaseline from '@material-ui/core/CssBaseline';
+
+import {
+  HashRouter,
+  Routes,
+  Route,
+} from 'react-router-dom';
 
 import AllPosts from './containers/AllPosts';
 import PostsBySpecifiedUser from './containers/PostsBySpecifiedUser';
@@ -76,43 +76,26 @@ const useStyles = makeStyles(theme => ({
 }));
 
 const App = () => {
-  const [authState, setAuthState] = React.useState();
-  const [user, setUser] = React.useState();
-
   const classes = useStyles();
-
-  React.useEffect(() => {
-    return onAuthUIStateChange((nextAuthState, authData) => {
-      setAuthState(nextAuthState);
-      setUser(authData)
-    });
-  }, []);
-
-  return authState === AuthState.SignedIn && user ? (
-    <div className={classes.root} >
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <HashRouter>
-          <Switch>
-            <Route exact path='/' component={AllPosts} />
-            <Route exact path='/global-timeline' component={AllPosts} />
-            <Route exact path='/:userId' component={PostsBySpecifiedUser}/>
-            <Redirect path="*" to="/" />
-          </Switch>
-        </HashRouter>
-      </ThemeProvider>
-    </div>
-  ) : (
-    <AmplifyAuthenticator>
-      <AmplifySignUp
-        slot="sign-up"
-        formFields={[
-          { type: "username" },
-          { type: "password" },
-          { type: "email" }
-        ]}
-      />
-    </AmplifyAuthenticator>
+  return(
+    <Authenticator>
+      {() => (
+        <div className={classes.root} >
+          <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <HashRouter>
+              <Routes>
+                <Route path='/'>
+                  <Route index element={<AllPosts/>}/>
+                  <Route path=':userId' element={<PostsBySpecifiedUser/>}/>
+                  <Route path='global-timeline' element={<AllPosts/>}/>
+                </Route>
+              </Routes>
+            </HashRouter>
+          </ThemeProvider>
+        </div>
+      )}
+    </Authenticator>
   );
 }
 

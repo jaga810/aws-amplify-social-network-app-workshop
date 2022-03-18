@@ -53,17 +53,17 @@ export default function AllPosts() {
 
     const subscription = API.graphql(graphqlOperation(onCreatePost)).subscribe({
       next: (msg) => {
-        console.log('allposts subscription fired')
         const post = msg.value.data.onCreatePost;
         dispatch({ type: SUBSCRIPTION, post: post });
       }
     });
+
     return () => subscription.unsubscribe();
   }, []);
 
 
   return (
-    <React.Fragment>
+    <>
       <Sidebar 
         activeListItem='global-timeline'
       />
@@ -73,6 +73,6 @@ export default function AllPosts() {
         getAdditionalPosts={getAdditionalPosts}
         listHeaderTitle={'Global Timeline'}
       />
-    </React.Fragment>
+    </>
   )
 }

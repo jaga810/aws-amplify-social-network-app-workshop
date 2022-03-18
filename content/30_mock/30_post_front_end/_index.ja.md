@@ -19,7 +19,7 @@ GraphQL APIの実装ができたところで、フロントエンドの実装を
 フロントの構築に必要なライブラリをインストールします。
 
 ```bash
-npm install --save @material-ui/core@4.11.2 @material-ui/icons@4.11.2 moment@2.29.1 react-router@5.2.0 react-router-dom@5.2.0
+npm install --save @material-ui/core@4.12.3 @material-ui/icons@4.11.2 moment@2.29.1 react-router@6.2.2 react-router-dom@6.2.2
 ```
 
 ### App.js
@@ -30,22 +30,27 @@ npm install --save @material-ui/core@4.11.2 @material-ui/icons@4.11.2 moment@2.2
 ポイントは以下です。
 
 ```jsx
-function App() {
+const App = () => {
   const classes = useStyles();
-  return (
-    <div className={classes.root} >
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <HashRouter>
-          <Switch>
-            <Route exact path='/' component={AllPosts} />
-            <Route exact path='/global-timeline' component={AllPosts} />
-            <Route exact path='/:userId' component={PostsBySpecifiedUser}/>
-            <Redirect path="*" to="/" />
-          </Switch>
-        </HashRouter>
-      </ThemeProvider>
-    </div>
+  return(
+    <Authenticator>
+      {() => (
+        <div className={classes.root} >
+          <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <HashRouter>
+              <Routes>
+                <Route path='/'>
+                  <Route index element={<AllPosts/>}/>
+                  <Route path=':userId' element={<PostsBySpecifiedUser/>}/>
+                  <Route path='global-timeline' element={<AllPosts/>}/>
+                </Route>
+              </Routes>
+            </HashRouter>
+          </ThemeProvider>
+        </div>
+      )}
+    </Authenticator>
   );
 }
 ```
@@ -54,11 +59,9 @@ function App() {
   - `HashRouter`
       - 静的サイト内でブラウザの`戻る`機能を利用したり、外部から直接特定のコンポーネントにアクセスするため、今回は`HashRouter`を使用しています
       - `https://example.com/#/global-timeline`のような形式で、ルーティングが行われます
-  - `Switch`: 配下の`Route`のうち、どれか一つにマッチしたらそれのみをレンダリング(`Switch`なしだとマッチしたもの全てがレンダリングされる)
   - `Route`
       - `/`または`/global-timeline`にアクセスがあった場合、`AllPosts`コンポーネントをレンダリングして表示
       - `/:userId`は`/userA`のようなアクセスがあった時にマッチし、`PostsBySpecifiedUser`コンポーネントをレンダリングして表示し、`:userId`をParameterとして受け渡します
-          - `/global-timeline`の`Route`の上に`/:userId`の`Route`を書いた場合、先に`/:userId`とマッチしてしまうため、`global-timeline`が表示されません
 - `ThemeProvider`: Material-UIのクラスで、アプリケーション全体のCSSテーマをセット
 
 ### Sidebar.js
@@ -139,10 +142,11 @@ const handleChange = event => {
 
 #### createPost Mutationの実行
 
-```react
+```jsx
 import { createPost } from '../graphql/mutations';
 
 {中略}
+
   const onPost = async () => {
     const res = await API.graphql(graphqlOperation(createPost, { input: {
       type: 'post',
@@ -161,7 +165,7 @@ import { createPost } from '../graphql/mutations';
 
 #### サインアウト機能の実装
 
-```react
+```jsx
 import Auth from '@aws-amplify/auth';
 
 {中略}
@@ -174,7 +178,7 @@ import Auth from '@aws-amplify/auth';
 ```
 
 - サインアウトの実装は、Authモジュールを利用しています。
-- サインアウトが実行されると、サインイン状態でなくなったことを`withAuthenticator`が検知して、サインイン画面に戻ります。
+- サインアウトが実行されると、サインイン状態でなくなったことを`Authenticator`が検知して、サインイン画面に戻ります。
 
 ### AllPosts.js
 全てのPostを表示するためのUIを作成していきます。
@@ -216,13 +220,14 @@ const getPosts = async (type, nextToken = null) => {
 useEffect(() => {
   getPosts(INITIAL_QUERY);
 
-  const subscription = API.graphql(graphqlOperation(onCreatePost)).subscribe({
+  const subscription = API.graphql(graphqlOperation(onCreatePost, {owner:"jaga"})).subscribe({
     next: (msg) => {
-      console.log('allposts subscription fired')
       const post = msg.value.data.onCreatePost;
       dispatch({ type: SUBSCRIPTION, post: post });
     }
   });
+
+  console.log(subscription)
   return () => subscription.unsubscribe();
 }, []);
 ```
@@ -242,7 +247,7 @@ touch src/containers/PostsBySpecifiedUser.js
 
 {{%attachments title="./src/containers/PostsBySpecifiedUser.js" pattern="PostsBySpecifiedUser.js"/%}}
 
-```react
+```jsx
 const getPosts = async (type, nextToken = null) => {
   const res = await API.graphql(graphqlOperation(listPostsBySpecificOwner, {
     owner: userId,

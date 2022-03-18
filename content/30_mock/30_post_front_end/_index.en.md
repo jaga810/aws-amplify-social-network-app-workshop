@@ -25,7 +25,7 @@ Install the necessary libraries to build the front.
 
 
 ```bash
-npm install --save @material-ui/core@4.11.2 @material-ui/icons@4.11.2 moment@2.29.1 react-router@5.2.0 react-router-dom@5.2.0
+npm install --save @material-ui/core@4.12.3 @material-ui/icons@4.11.2 moment@2.29.1 react-router@6.2.2 react-router-dom@6.2.2
 ```
 
 
@@ -37,22 +37,27 @@ Copy the following code and replace `/src/App.js` with it.
 The points are as follows:
 
 ```jsx
-function App() {
+const App = () => {
   const classes = useStyles();
-  return (
-    <div className={classes.root} >
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <HashRouter>
-          <Switch>
-            <Route exact path='/' component={AllPosts} />
-            <Route exact path='/global-timeline' component={AllPosts} />
-            <Route exact path='/:userId' component={PostsBySpecifiedUser}/>
-            <Redirect path="*" to="/" />
-          </Switch>
-        </HashRouter>
-      </ThemeProvider>
-    </div>
+  return(
+    <Authenticator>
+      {() => (
+        <div className={classes.root} >
+          <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <HashRouter>
+              <Routes>
+                <Route path='/'>
+                  <Route index element={<AllPosts/>}/>
+                  <Route path=':userId' element={<PostsBySpecifiedUser/>}/>
+                  <Route path='global-timeline' element={<AllPosts/>}/>
+                </Route>
+              </Routes>
+            </HashRouter>
+          </ThemeProvider>
+        </div>
+      )}
+    </Authenticator>
   );
 }
 ```
@@ -62,11 +67,9 @@ function App() {
   - `HashRouter`
     - This time you use `HashRouter` to take advantage of the browser's `back` function within a static site or to access certain components directly from outside
     - e.g. `https://example.com/#/global-timeline`
-  - `Switch`: If one of the `Route` matches, only renders it (without `Switch`, all matching components is rendered)
   - `Route`
     - Render and display the `AllPosts` component when `/` or `/global-timeline` is accessed
     - `/:userId` matches when accesses such as `/userA`, renders and displays the `PostsBySpecifiedUser` component, and passes `:userId ` as a Parameter
-      - If you write `Route` of `/:userId` on `Route` of `/global-timeline`, it matches `/:userId` first, so `global- timeline` is not displayed
 - `ThemeProvider`: Material-UI class, which sets the CSS theme for the entire application
 
 
@@ -137,7 +140,7 @@ For more information about useState, see [here](https://reactjs.org/docs/hooks-s
 - Passes the `value` state you just created to the TextField input `value`.
 - If the input value of a TextField is changed by user, the `handleChange` function passed in `onChange={handleChange} ` is called.
 
-```js
+```jsx
 const handleChange = event => {
   setValue(event.target.value);
   if (event.target.value.length > MAX_POST_CONTENT_LENGTH) {
@@ -156,7 +159,7 @@ const handleChange = event => {
 
 #### Running createPost Mutation
 
-```react
+```jsx
 import { createPost } from '../graphql/mutations';
 
 ...
@@ -180,7 +183,7 @@ import { createPost } from '../graphql/mutations';
 
 #### Sign-Out Functionality Implementation
 
-```react
+```jsx
 import Auth from '@aws-amplify/auth';
 
 ...
@@ -193,7 +196,7 @@ import Auth from '@aws-amplify/auth';
 ```
 
 - Sign-out implementation uses the Auth module.
-- When sign-out is performed, `withAuthenticator` detects that it is no longer in the sign-in state and returns to the sign-in screen.
+- When sign-out is performed, `Authenticator` detects that it is no longer in the sign-in state and returns to the sign-in screen.
 
 ### AllPosts.js
 You create a UI for displaying all Posts.
@@ -211,7 +214,7 @@ Let's look at the points of the code.
 
 #### Fetch Posts for all users in chronological order
 
-```js
+```jsx
 const getPosts = async (type, nextToken = null) => {
   const res = await API.graphql(graphqlOperation(listPostsSortedByTimestamp, {
     type: "post",
@@ -238,7 +241,6 @@ useEffect(() => {
 
   const subscription = API.graphql(graphqlOperation(onCreatePost)).subscribe({
     next: (msg) => {
-      console.log('allposts subscription fired')
       const post = msg.value.data.onCreatePost;
       dispatch({ type: SUBSCRIPTION, post: post });
     }
@@ -263,7 +265,7 @@ Copy the contents of `PostsBySpecifiedUser.js` below and replace `./src/containe
 
 {{%attachments title="./src/containers/PostsBySpecifiedUser.js"pattern="PostsBySpecifiedUser.js" /%}}
 
-```react
+```jsx
 const getPosts = async (type, nextToken = null) => {
   const res = await API.graphql(graphqlOperation(listPostsBySpecificOwner, {
     owner: userId,
@@ -334,7 +336,6 @@ Let's see these changes applied in the cloud. (It takes a few minutes to run)
 ```bash
 amplify push
 ```
-
 
 If `$amplify mock api` is running, use `Ctrl+C` to stop the execution of the command.
 Now let's check if the UI implementation is working well.

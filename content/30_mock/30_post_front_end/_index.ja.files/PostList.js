@@ -13,7 +13,7 @@ import {
   CircularProgress,
 } from '@material-ui/core';
 
-import { useHistory } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import moment from 'moment';
 
 const useStyles = makeStyles(theme => ({
@@ -93,7 +93,7 @@ export default function PostList({ isLoading, posts, getAdditionalPosts, listHea
 
 function PostItem({ post }) {
   const classes = useStyles();
-  const history = useHistory();
+  const navigate = useNavigate();
   const now = moment();
   console.log(now)
 
@@ -112,13 +112,13 @@ function PostItem({ post }) {
   return (
     <ListItem alignItems='flex-start' key={post.id}>
       <ListItemAvatar>
-        <div className={classes.clickable} onClick={() => history.push('/' + post.owner)}>
+        <div className={classes.clickable} onClick={() => navigate('/' + post.owner)}>
           <Avatar alt={post.owner} src='/' />
         </div>
       </ListItemAvatar>
       <ListItemText
         primary={
-          <React.Fragment>
+          <>
             {post.owner}
             <Typography
               color='textSecondary'
@@ -126,7 +126,7 @@ function PostItem({ post }) {
             >
               {' ' + String.fromCharCode(183) + ' ' + calcTimestampDiff(post.timestamp)}
             </Typography>
-          </React.Fragment>
+          </>
         }
         secondary={
           <Typography
