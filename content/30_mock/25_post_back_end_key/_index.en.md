@@ -48,6 +48,7 @@ Update `./amplify/backend/api/BoyakiGql/schema.graphql` as follows.
 type Post
   @model (
     mutations: {create: "createPost", delete: "deletePost", update: null}
+    subscriptions: {onCreate: "onCreatePost", level: public}
   )
   @auth(rules: [
     {allow: owner, ownerField:"owner", provider: userPools, operations:[read, create, delete]}

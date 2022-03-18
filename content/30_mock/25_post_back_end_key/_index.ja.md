@@ -46,6 +46,7 @@ Global Secondary Indexの詳細な説明は省かせていただきますが、�
 type Post
   @model (
     mutations: {create: "createPost", delete: "deletePost", update: null}
+    subscriptions: {onCreate: "onCreatePost", level: public}
   )
   @auth(rules: [
     {allow: owner, ownerField:"owner", provider: userPools, operations:[read, create, delete]}

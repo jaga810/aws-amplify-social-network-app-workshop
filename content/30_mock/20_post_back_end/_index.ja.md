@@ -59,6 +59,7 @@ schema.graphqlを編集して、Post(投稿)を管理するAPIを作成しまし
 type Post
   @model (
     mutations: {create: "createPost", delete: "deletePost", update: null}
+    subscriptions: {onCreate: "onCreatePost", level: public}
   )
   @auth(rules: [
     {allow: owner, ownerField:"owner", provider: userPools, operations:[read, create, delete]}
