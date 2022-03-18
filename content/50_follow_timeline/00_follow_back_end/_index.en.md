@@ -17,15 +17,13 @@ Add the following code to `./amplify/backend/api/BoyakiGql/schema.graphql`:
 type FollowRelationship
 	@model(
     mutations: {create: "createFollowRelationship", delete: "deleteFollowRelationship", update: null}
-    timestamps: null
   )
 	@auth(rules: [
 		{allow: owner, ownerField:"followerId", provider: userPools, operations:[read, create, delete]},
 		{allow: private, provider: userPools, operations:[read]}
 	])
-	@key(fields: ["followeeId", "followerId"])
 {
-	followeeId: ID!
+	followeeId: ID! @primaryKey(sortKeyFields: ["followerId"])
 	followerId: ID!
 	timestamp: Int!
 }
@@ -38,13 +36,11 @@ The points are as follows:
 	- `followerId` is the `username` of the person following.
 	- `tiemstamp` is the date and time when follow.
 - `@model`
-	-  GraphQL API doesn't have API for updating Post by specifing `mutations: ...` because user doesn't need to update Post in this app. [detail](https://docs.amplify.aws/cli/graphql-transformer/model#usage) 
-	- Post type doesn't have `createdAt` and `updatedAt` attributes which are created by default by specifing `timestamps:...`. Use AWS Timestamp `timestamp` attribute instead here.
+	-  GraphQL API doesn't have API for updating Post by specifing `mutations: ...` because user doesn't need to update Post in this app.
 - `@auth`
 	- `{allow: owner...` allows users to create and view FollowRelationships
 	- `{allow: private... ` allows other users to view FollowRelasionship
-- `@key`
-	- If you do not specify `name` or `queryField`, you can set Partition Key (PK) or Secondary Key (SK) of DynamoDB Table itself (not GSI).
+- `@primaryKey`
 	- This time, get a list of FollowRelationships associated with a `followeId` to duplicate the Post to the Timeline of followers of those who posted the Post.
 	- So specify `followeeId` as PK and `followerId` as SK.
 

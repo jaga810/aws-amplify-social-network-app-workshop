@@ -17,15 +17,13 @@ FollowRelationshipテーブルを作成し、あるユーザーが他のユー�
 type FollowRelationship
 	@model(
     mutations: {create: "createFollowRelationship", delete: "deleteFollowRelationship", update: null}
-    timestamps: null
   )
 	@auth(rules: [
 		{allow: owner, ownerField:"followerId", provider: userPools, operations:[read, create, delete]},
 		{allow: private, provider: userPools, operations:[read]}
 	])
-	@key(fields: ["followeeId", "followerId"])
 {
-	followeeId: ID!
+	followeeId: ID! @primaryKey(sortKeyFields: ["followerId"])
 	followerId: ID!
 	timestamp: Int!
 }
@@ -39,12 +37,10 @@ type FollowRelationship
   - `tiemstamp`はフォローした日時です。
 - `@model`
   - `mutations:...`では必要のないudpate用APIを作らない設定をします
-  - `timestamps:...`では、デフォルトで自動的に付与される`updatedAt``createdAt`の属性を作らない設定をします。代わりにAWS Timestamp属性の`timestamp`を用います。
 - `@auth`
   - `{allow: owner...`により、ユーザーは自分を`follower`としたFollowRelationshipの作成と閲覧ができます
   - `{allow: private...`では他のユーザーのFollowRelasionshipの閲覧を許可しています
-- `@key`
-  - `name`や`queryField`を指定しない場合、DynamoDB Table自体のPartition Key(PK)やSecondary Key(SK)を設定することができます
+- `@primaryKey`
   - 今回、Postを投稿したユーザーのフォロワーのTimelineにPostを複製するため、ある`followeeId`に紐づくFollowRelationship一覧を取得する必要があります
   - そのため`followeeId`をPK、`followerId`をSKに指定します
 
