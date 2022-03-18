@@ -110,7 +110,7 @@ export default function PostsBySpecifiedUser() {
 
 
   return (
-    <React.Fragment>
+    <>
       <Sidebar 
         activeListItem='profile'
       />
@@ -128,6 +128,6 @@ export default function PostsBySpecifiedUser() {
           )
         }
       />
-    </React.Fragment>
+    </>
   )
 }
