@@ -20,15 +20,14 @@ type Timeline
     timestamps: null
   )
 	@auth(rules: [
-    {allow: owner, ownerField: "userId", provider: userPools, operations:[read, create]},
-    {allow: private, provider: iam ,operations:[create]},
+    {allow: owner, ownerField: "userId", provider: userPools, operations:[read]},
+    {allow: private, provider: iam ,operations:[create, read]},
 	])
-	@key(fields: ["userId", "timestamp"])
 {
-	userId: ID!
+	userId: ID! @primaryKey(sortKeyFields: ["timestamp"])
 	timestamp: Int!
 	postId: ID!
-	post: Post @connection(fields: ["postId"])
+	post: Post @hasOne(fields: ["postId"])
 }
 ```
 
@@ -36,20 +35,24 @@ type Timeline
 
 - `@model`
   - `mutations:...`では必要のないudpate、delete用APIを作らない設定をします
-  - `timestamps:...`では、デフォルトで自動的に付与される`updatedAt``createdAt`の属性を作らない設定をします。代わりにAWS Timestamp属性の`timestamp`を用います。
+  - `timestamps:...`では、デフォルトで自動的に付与される`updatedAt``createdAt`の属性を作らない設定をします。代わりにInt型の`timestamp`を用います。
 - `@auth`
   - `{allow: owner...`では、OwnerであるユーザーのみがTimelineのQuery/Subscriptionを実行できるよう設定しています。
     - Subscriptionを行うためには`read``create`、この2つの権限が必要です
-  - `{allow: private...`では、後ほど作成するAWS Lambda関数がTimeline APIのMutationを実行できるようにIAM認証によるアクセスを許可しています
-- `@key`
+  - `{allow: private...`では、後ほど作成するAWS Lambda関数がTimeline APIのMutation、Queryを実行できるようにIAM認証によるアクセスを許可しています
+- `@primaryKey`
   - あるユーザーがTimelineを閲覧するときには、`userId`が自分の`Username`と一致するアイテムを時系列順でフェッチすることになります
   - `userId`がPartition Key(PK)、`timestamp`をSort Key(SK)とすることで、自身のTimelineを時系列順にフェッチすることが可能です
-- `@connection`
-  - Timeline APIの役割は、あるユーザーのPostを、そのフォロワーのTimelineに複製することで、各ユーザー固有のTimelineを実現することでした
+- `@hasOne`
+  - Timeline APIの役割は、あるユーザーのPostを、そのフォロワーのTimelineに複製し、各ユーザー固有のTimelineを実現することでした
   - 複製する際に、まるごとPostのフィールドをTimelineのフィールドに複製することも可能ですが、例えば"いいね"や、"返信"機能を実装する際に、フィールドをアップデートすべき箇所がPostとTimelineにまたがってしまうと大変です
-  - `@connection`を使用することで、AWS AppSyncがQueryを処理する際に、複数のDynamoDB Tableにまたがるデータを結合してくれるようになります
+  - `@hasOne`を使用することで、AWS AppSyncがQueryを処理する際に、複数のDynamoDB Tableにまたがるデータを結合してくれるようになります
   - `fields`では、Post TableのPrimary Keyを指定しています。Timeline Tableの`postId`フィールドにPostの`id`を格納しています。Postは`id`フィールドがPrimary Keyでしたので、`postId`だけを渡してやれば、一意にアイテムが識別できます
 
+{{% notice tip%}}
+1:1の関係を記述する`@hasOne`以外にも、1:Nに`@hasMany`、1:1と1:Nの双方向関係の記述をするための`@belongsTo`、N:Nに`@manyToMany`といったディレクティブが用意されています。
+[[詳細](https://docs.amplify.aws/cli/graphql/data-modeling/#setup-relationships-between-models)]
+{{% /notice %}}
 
 ### GraphQL APIの認証方法にIAMを追加
 Timeline APIのMutationを実行してTimelineアイテムを作成するのはAWS Lambda関数の役割です。
@@ -59,12 +62,12 @@ Lambda関数がAWS AppSyncのAPIコールを行う最も簡単な認証方法は
 
 `$ amplify update api`をターミナルで実行し、次のように質問に答えていきましょう。
 
-```
+```bash
 amplify update api
 ```
 
 - Please select from one of the below mentioned services: `GraphQL`
-- Select from the options below: `Update auth settings`
+- Select a setting to edit: `Authorization modes`
 - Choose the default authorization type for the API `Amazon Cognito User Pool`
 - Configure additional auth types? `Yes`
 - Choose the additional authorization types you want to configure for the API `IAM`

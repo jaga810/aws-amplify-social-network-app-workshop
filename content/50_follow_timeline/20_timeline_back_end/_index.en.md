@@ -21,15 +21,14 @@ type Timeline
     timestamps: null
   )
 	@auth(rules: [
-    {allow: owner, ownerField: "userId", provider: userPools, operations:[read, create]},
-    {allow: private, provider: iam ,operations:[create]},
+    {allow: owner, ownerField: "userId", provider: userPools, operations:[read]},
+    {allow: private, provider: iam ,operations:[create, read]},
 	])
-	@key(fields: ["userId", "timestamp"])
 {
-	userId: ID!
+	userId: ID! @primaryKey(sortKeyFields: ["timestamp"])
 	timestamp: Int!
 	postId: ID!
-	post: Post @connection(fields: ["postId"])
+	post: Post @hasOne(fields: ["postId"])
 }
 ```
 
@@ -37,19 +36,27 @@ Let's look at the points.
 
 - `@model`
 	-  GraphQL API doesn't have API for updating Post by specifing `mutations: ...` because user doesn't need to update Post in this app. [detail](https://docs.amplify.aws/cli/graphql-transformer/model#usage) 
-	- Post type doesn't have `createdAt` and `updatedAt` attributes which are created by default by specifing `timestamps:...`. Use AWS Timestamp `timestamp` attribute instead here.
+	- Post type doesn't have `createdAt` and `updatedAt` attributes which are created by default by specifing `timestamps:...`. Use Int `timestamp` attribute instead here.
 - `@auth`
 	- `{allow: owner... ` allows only users who are Owner to execute Timeline Query/Subscription.
 	- To do Subscription, both of `read` and `create` permissions are required.
-	- `{allow: private... ` allows access through IAM authentication so that the AWS Lambda function you create later can run the Timeline API Mutation.
-- `@key`
+	- `{allow: private... ` allows access through IAM authentication so that the AWS Lambda function you create later can run the Timeline API Mutation and Query.
+- `@primaryKey`
 	- When a user browses the Timeline, fetches items matching `userid` with their `Username` in chronological order.
 	- Fetch their own Timeline in chronological order by using `userId` as Partition Key (PK) and `timestamp` as Sort Key (SK).
-- `@connection`
+- `@hasOne`
 	- Timeline API's role is to replicate a user's Post to the Timeline of its followers, thus creating a unique Timeline for each user.
 	- When duplicating, it is possible to duplicate the entire Post field into the Timeline field. However, for example, when implementing the "Like" or "Reply" function, duplicated items need all updated. It is very difficult in case the place is crossing Post and Timeline.
-	- By using `@connection`, AWS AppSync is able to combine data across multiple DynamoDB Tables when processing a Query.
+	- By using `@hasOne`, AWS AppSync is able to combine data across multiple DynamoDB Tables when processing a Query.
 	- In `fields`, the Primary Key of the Post Table is specified. Post `id` is stored in the `postId` field of the Timeline Table. In Post, the `id` field was Primary Key, so if you pass only `postId`, you can uniquely identify the Post.
+
+{{% notice tip%}}
+`@hasOne` creates a one-directional one-to-one relationship between two models.
+`@hasMany` creates a one-directional one-to-many relationship between two models.
+Use a `@belongsTo` relationship to make a "has one" or "has many" relationship bi-directional.
+`@manyToMany` configures a "join table" between two models to facilitate a many-to-many relationship.
+[[Description](https://docs.amplify.aws/cli/graphql/data-modeling/#setup-relationships-between-models)]
+{{% /notice %}}
 
 ### Add IAM to GraphQL API authentication method
 It is the role of the AWS Lambda function to run the Timeline API Mutation to create a Timeline item in Timeline table.
@@ -64,7 +71,7 @@ amplify update api
 ```
 
 - Please select from one of the below mentioned services: `GraphQL`
-- Select from the options below: `Update auth settings`
+- Select a setting to edit: `Authorization modes`
 - Choose the default authorization type for the API `Amazon Cognito User Pool`
 - Configure additional auth types? `Yes`
 - Choose the additional authorization types you want to configure for the API `IAM`
