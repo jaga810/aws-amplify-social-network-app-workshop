@@ -35,6 +35,8 @@ FollowRelationship APIと、Timeline APIが作成できました。
 - Select the operations you want to permit for BoyakiGql `Query, Mutation`
 - Do you want to invoke this function on a recurring schedule? `No`
 - Do you want to configure Lambda layers for this function? `No`
+- Do you want to configure environment variables for this function? `No`
+- Do you want to configure secret values this function can access? `No`
 - Do you want to edit the local lambda function now? `No`
 
 {{% notice tip %}}
